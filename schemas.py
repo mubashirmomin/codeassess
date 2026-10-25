@@ -34,3 +34,32 @@ class SubmissionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class TestCaseCreate(BaseModel):
+    input_data: str
+    expected_output: str
+    is_hidden: bool
+
+class TestCaseResponse(BaseModel):
+    id: int
+    question_id: int
+    input_data: str
+    expected_output: str
+    is_hidden: bool
+
+    class Config:
+        from_attributes = True
+
+class UserCreate(BaseModel):
+    username: str
+    email: str
+    password: str
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    role: str
+
+    class Config:
+        from_attributes = True

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 import database
 import models
 import schemas
+import security
 
 # 1. Create all tables in the database (SQLite for now)
 models.Base.metadata.create_all(bind=database.engine)
@@ -42,3 +43,46 @@ def read_questions(db: Session = Depends(get_db)):
     # Fetch all records from the questions table
     questions = db.query(models.Question).all()
     return questions
+
+# 5. Create a Test Case for a specific Question
+@app.post("/questions/{question_id}/testcases/", response_model=schemas.TestCaseResponse)
+def create_test_case(question_id: int, testcase: schemas.TestCaseCreate, db: Session = Depends(get_db)):
+    # 1. Check if the question actually exists
+    db_question = db.query(models.Question).filter(models.Question.id == question_id).first()
+    if not db_question:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    # 2. Create the test case and link it using the question_id from the URL
+    db_testcase = models.TestCase(
+        question_id=question_id,
+        input_data=testcase.input_data,
+        expected_output=testcase.expected_output,
+        is_hidden=testcase.is_hidden
+    )
+    
+    # 3. Save to the database
+    db.add(db_testcase)
+    db.commit()
+    db.refresh(db_testcase)
+    
+    return db_testcase
+
+@app.post("/users/", response_model=schemas.UserResponse)
+def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    # 1. Hash the plain text password
+    hashed_pwd = security.get_password_hash(user.password)
+    
+    # 2. Create the database object with the hashed password
+    db_user = models.User(
+        username=user.username,
+        email=user.email,
+        hashed_password=hashed_pwd
+    )
+    
+    # 3. Save to the database
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    
+    return db_user
