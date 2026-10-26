@@ -4,6 +4,7 @@ import database
 import models
 import schemas
 import security
+from fastapi.security import OAuth2PasswordRequestForm
 
 # 1. Create all tables in the database (SQLite for now)
 models.Base.metadata.create_all(bind=database.engine)
@@ -86,3 +87,18 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(db_user)
     
     return db_user
+
+@app.post("/login", response_model=schemas.Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    # 1. Find the user by username
+    user = db.query(models.User).filter(models.User.username == form_data.username).first()
+    
+    # 2. Check if user exists and password matches
+    if not user or not security.verify_password(form_data.password, user.hashed_password):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="Incorrect username or password")
+    
+    # 3. Generate the VIP wristband (JWT)
+    access_token = security.create_access_token(data={"sub": user.username})
+    
+    return {"access_token": access_token, "token_type": "bearer"}
