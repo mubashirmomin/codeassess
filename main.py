@@ -8,6 +8,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from fastapi import HTTPException, status
 import jwt
+import engine
 
 # 1. Create all tables in the database (SQLite for now)
 models.Base.metadata.create_all(bind=database.engine)
@@ -155,24 +156,28 @@ def submit_code(
     question_id: int,
     submission: schemas.SubmissionCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)  # Notice we use the standard user guard, not admin!
+    current_user: models.User = Depends(get_current_user)
 ):
-    # 1. Verify the question actually exists first
+    # 1. Verify Question and fetch the first test case
     question = db.query(models.Question).filter(models.Question.id == question_id).first()
-    if not question:
+    test_case = db.query(models.TestCase).filter(models.TestCase.question_id == question_id).first()
+    
+    if not question or not test_case:
         from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Question not found")
+        raise HTTPException(status_code=404, detail="Question or Test Case not found")
         
-    # 2. Create the database record
+    # 2. Run the engine!
+    grading_result = engine.evaluate_submission(submission.source_code, test_case)
+    
+    # 3. Save the graded submission to the database
     db_submission = models.Submission(
         question_id=question_id,
         user_id=current_user.id,
         language=submission.language,
         source_code=submission.source_code,
-        status="Pending"  # It stays Pending until the execution engine runs it
+        status=grading_result  # It now saves as "Passed", "Failed", etc.
     )
     
-    # 3. Save to the database
     db.add(db_submission)
     db.commit()
     db.refresh(db_submission)
