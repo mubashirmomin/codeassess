@@ -1,13 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# 1. Use SQLite for local testing until Docker is installed
-SQLALCHEMY_DATABASE_URL = "sqlite:///./codeassess.db"
+SQLALCHEMY_DATABASE_URL = "postgresql+psycopg2://codeadmin:supersecretpassword@db:5432/codeassess"
 
-# 2. Create the SQLite engine
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 # 3. Create the session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

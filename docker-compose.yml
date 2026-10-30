@@ -1,16 +1,17 @@
 version: '3.8'
-
 services:
   db:
-    image: postgres:15
+    image: postgres:15-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password123
+      POSTGRES_USER: codeadmin
+      POSTGRES_PASSWORD: supersecretpassword
       POSTGRES_DB: codeassess
     ports:
       - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
 
-volumes:
-  postgres_data:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
