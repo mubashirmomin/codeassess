@@ -36,3 +36,20 @@ class TestCase(Base):
 
     # The relationship back to the parent question
     question = relationship("Question", back_populates="test_cases")
+
+class Submission(Base):
+    __tablename__ = "submissions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    # Link to the question being answered
+    question_id = Column(Integer, ForeignKey("questions.id"), nullable=False)
+    # Link to the user who wrote the code
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    language = Column(String, nullable=False)
+    source_code = Column(Text, nullable=False)
+    status = Column(String, default="Pending") # Statuses: Pending, Passed, Failed, Error
+
+    # SQLAlchemy relationships for easy data fetching
+    question = relationship("Question")
+    user = relationship("User")

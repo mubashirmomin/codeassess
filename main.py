@@ -148,3 +148,33 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 @app.get("/users/me", response_model=schemas.UserResponse)
 def read_users_me(current_user: models.User = Depends(get_current_user)):
     return current_user
+
+# 4. Submit Code Endpoint (Candidates & Admins)
+@app.post("/questions/{question_id}/submissions/", response_model=schemas.SubmissionResponse)
+def submit_code(
+    question_id: int,
+    submission: schemas.SubmissionCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)  # Notice we use the standard user guard, not admin!
+):
+    # 1. Verify the question actually exists first
+    question = db.query(models.Question).filter(models.Question.id == question_id).first()
+    if not question:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Question not found")
+        
+    # 2. Create the database record
+    db_submission = models.Submission(
+        question_id=question_id,
+        user_id=current_user.id,
+        language=submission.language,
+        source_code=submission.source_code,
+        status="Pending"  # It stays Pending until the execution engine runs it
+    )
+    
+    # 3. Save to the database
+    db.add(db_submission)
+    db.commit()
+    db.refresh(db_submission)
+    
+    return db_submission

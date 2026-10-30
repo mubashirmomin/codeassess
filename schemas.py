@@ -21,13 +21,13 @@ class QuestionResponse(BaseModel):
         from_attributes = True
 
 class SubmissionCreate(BaseModel):
-    question_id: int
     language: str
     source_code: str
 
 class SubmissionResponse(BaseModel):
     id: int
     question_id: int
+    user_id: int
     language: str
     source_code: str
     status: str
